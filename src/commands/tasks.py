@@ -113,8 +113,12 @@ def create(
         picked = pick(milestones, prompt='Select a milestone')
         milestone_id = picked.get('id')
 
-    cat = input('Category [Tarea tecnica]: ').strip()
-    category = cat or 'Tarea tecnica'
+    cat = pick([
+        {'id': 'Tarea tecnica', 'name': 'Tarea tecnica'},
+        {'id': 'Historia de usuario', 'name': 'Historia de usuario'},
+        {'id': 'Caso de Prueba', 'name': 'Caso de Prueba'},
+    ], prompt='Select a category')['id']
+    category = cat
 
     description = input('Description (optional): ').strip()
 

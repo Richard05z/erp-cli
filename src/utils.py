@@ -19,7 +19,7 @@ def pick(items, label_field='name', id_field='id', prompt='Select an option'):
                 extra += f' ({v})'
                 break
         choices.append(Choice(title=f'{label}{extra}', value=item))
-    return select(prompt, choices=choices).ask()
+    return select(prompt, choices=choices, use_search_filter=True, use_jk_keys=False, instruction='(Type to filter, use arrows to navigate)').ask()
 
 
 def format_m2o(field):
