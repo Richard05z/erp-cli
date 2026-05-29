@@ -3,9 +3,14 @@ import os
 import sys
 from dotenv import load_dotenv
 
+load_dotenv()
+
 URL = 'https://www.erp.lombaoestudios.com'
 DB = 'erp.lombaoestudios.com'
-LOGIN = 'richard05cardenas@gmail.com'
+LOGIN = os.environ.get('ERP_LOGIN')
+if not LOGIN:
+    print('Error: ERP_LOGIN not found. Set it in .env or as env var')
+    sys.exit(1)
 
 
 RELEVANT_STAGES = [156, 143, 144, 145, 161]
@@ -13,7 +18,6 @@ STAGE_NAMES = {156: 'New', 143: 'In process', 144: 'Despliegue', 145: 'Test', 16
 
 
 def _read_api_key():
-    load_dotenv()
     key = os.environ.get('ERP_API_KEY')
     if key:
         return key

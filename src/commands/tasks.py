@@ -2,24 +2,34 @@ import typer
 from src.client import get_client, RELEVANT_STAGES
 from src.utils import format_m2o, output_json, pick
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 
 
 @app.command()
 def list(
     project_id: int = typer.Argument(None, help='Project ID'),
+    milestone_id: int = typer.Option(None, '--milestone', '-m', help='Milestone ID'),
     json: bool = typer.Option(False, '--json', help='Output as JSON'),
 ):
-    """List tasks, optionally filtered by project"""
+    """List tasks, optionally filtered by project and milestone"""
     uid, models, ak, db = get_client()
     if not project_id:
         projects = models.execute_kw(db, uid, ak, 'project.project',
             'search_read', [[]], {'fields': ['id', 'name'], 'order': 'create_date DESC'})
         picked = pick(projects, prompt='Select a project')
         project_id = picked['id']
-    domain = []
-    if project_id:
-        domain = [['project_id', '=', project_id]]
+        milestones = models.execute_kw(db, uid, ak, 'project.milestone',
+            'search_read', [[['project_id', '=', project_id]]], {
+                'fields': ['id', 'name', 'deadline'],
+                'order': 'deadline DESC',
+            })
+        if milestones:
+            milestones.insert(0, {'id': None, 'name': '(All milestones)'})
+            picked = pick(milestones, prompt='Select a milestone (optional)')
+            milestone_id = picked.get('id')
+    domain = [['project_id', '=', project_id]]
+    if milestone_id:
+        domain.append(['milestone_id', '=', milestone_id])
     tasks = models.execute_kw(db, uid, ak, 'project.task',
         'search_read', [domain], {
             'fields': ['id', 'name', 'user_ids', 'stage_id', 'x_categories', 'milestone_id', 'create_date'],
@@ -57,7 +67,7 @@ def get(
         picked = pick(tasks, prompt='Select a task')
         task_id = picked['id']
     task = models.execute_kw(db, uid, ak, 'project.task',
-        'read', [[task_id], ['id', 'name', 'project_id', 'milestone_id', 'stage_id', 'user_ids', 'partner_id', 'x_categories', 'description', 'planned_date_start', 'date_deadline', 'create_date']])
+        'read', [[task_id], ['id', 'name', 'project_id', 'milestone_id', 'stage_id', 'user_ids', 'partner_id', 'x_categories', 'description', 'date_deadline', 'create_date']])
     if not task:
         print(f'Task {task_id} not found')
         raise typer.Exit(1)
@@ -70,7 +80,9 @@ def get(
     print(f"  Milestone : {format_m2o(t.get('milestone_id'))}")
     print(f"  Stage     : {format_m2o(t.get('stage_id'))}")
     print(f"  Category  : {t.get('x_categories', '')}")
-    print(f"  Assignees : {', '.join([u[1] for u in t.get('user_ids', [])]) if isinstance(t.get('user_ids'), list) else t.get('user_ids', '')}")
+    user_ids = t.get('user_ids')
+    assignees = str(user_ids or '')
+    print(f"  Assignees : {assignees}")
     print(f"  Created   : {t.get('create_date')}")
 
 

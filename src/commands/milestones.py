@@ -2,7 +2,7 @@ import typer
 from src.client import get_client
 from src.utils import format_m2o, output_json, pick
 
-app = typer.Typer()
+app = typer.Typer(no_args_is_help=True)
 
 
 @app.command()
