@@ -88,37 +88,46 @@ def get(
 
 @app.command()
 def create(
-    project_id: int = typer.Argument(None, help='Project ID'),
-    name: str = typer.Option(None, '--name', '-n', help='Task name'),
-    category: str = typer.Option('Tarea tecnica', '--category', '-c', help='Category'),
-    milestone_id: int = typer.Option(None, '--milestone', '-m', help='Milestone ID'),
-    description: str = typer.Option('', '--description', '-d', help='Description'),
     json: bool = typer.Option(False, '--json', help='Output as JSON'),
 ):
-    """Create a task in a project"""
+    """Create a task interactively"""
     uid, models, ak, db = get_client()
-    if not project_id:
-        projects = models.execute_kw(db, uid, ak, 'project.project',
-            'search_read', [[]], {'fields': ['id', 'name'], 'order': 'create_date DESC'})
-        picked = pick(projects, prompt='Select a project')
-        project_id = picked['id']
-    if not milestone_id:
-        milestones = models.execute_kw(db, uid, ak, 'project.milestone',
-            'search_read', [[['project_id', '=', project_id]]], {
-                'fields': ['id', 'name'],
-                'order': 'deadline DESC, id DESC',
-                'limit': 1,
-            })
-        milestone_id = milestones[0]['id'] if milestones else None
+
+    projects = models.execute_kw(db, uid, ak, 'project.project',
+        'search_read', [[]], {'fields': ['id', 'name'], 'order': 'create_date DESC'})
+    picked = pick(projects, prompt='Select a project')
+    project_id = picked['id']
+
+    name = input('Task name: ').strip()
+    while not name:
+        name = input('Task name (required): ').strip()
+
+    milestones = models.execute_kw(db, uid, ak, 'project.milestone',
+        'search_read', [[['project_id', '=', project_id]]], {
+            'fields': ['id', 'name', 'deadline'],
+            'order': 'deadline DESC',
+        })
+    milestone_id = None
+    if milestones:
+        milestones.insert(0, {'id': None, 'name': '(No milestone)'})
+        picked = pick(milestones, prompt='Select a milestone')
+        milestone_id = picked.get('id')
+
+    cat = input('Category [Tarea tecnica]: ').strip()
+    category = cat or 'Tarea tecnica'
+
+    description = input('Description (optional): ').strip()
+
     task_data = {
-        'name': name or f'Task - {milestones[0]["name"] if milestones else project_id}',
+        'name': name,
         'project_id': project_id,
-        'milestone_id': milestone_id,
         'x_categories': category,
-        'description': description,
     }
-    if not milestone_id:
-        del task_data['milestone_id']
+    if milestone_id:
+        task_data['milestone_id'] = milestone_id
+    if description:
+        task_data['description'] = description
+
     task_id = models.execute_kw(db, uid, ak, 'project.task', 'create', [task_data])
     if json:
         output_json({'id': task_id, **task_data})
