@@ -1,9 +1,11 @@
+# Shared utilities: pickers, pagination, formatting, JSON output
 import json
 import sys
 from questionary import select, Choice, confirm
 
 
 def pick(items, label_field='name', id_field='id', prompt='Select an option'):
+    # Single-page picker — shows all items at once
     if not items:
         print('No items available')
         sys.exit(1)
@@ -13,6 +15,7 @@ def pick(items, label_field='name', id_field='id', prompt='Select an option'):
     for item in items:
         label = item.get(label_field, '')
         extra = ''
+        # Show first available date field as extra info
         for f in ['deadline', 'date_start', 'create_date']:
             v = item.get(f)
             if v:
@@ -23,8 +26,10 @@ def pick(items, label_field='name', id_field='id', prompt='Select an option'):
 
 
 def paginated_pick(fetch_page, label_field='name', id_field='id', prompt='Select an option', page_size=30):
+    # Multi-page picker with "(Show more...)" option. fetch_page(offset, limit) must return list of dicts.
     offset = 0
     while True:
+        # Fetch one extra to detect if more pages exist
         items = fetch_page(offset, page_size + 1)
         has_more = len(items) > page_size
         if has_more:
@@ -54,6 +59,7 @@ def paginated_pick(fetch_page, label_field='name', id_field='id', prompt='Select
 
 
 def paginated_display(fetch_page, display_fn, page_size=30):
+    # Paginated list output — shows {page_size} items, prompts "Show more?" after each page.
     offset = 0
     while True:
         items = fetch_page(offset, page_size + 1)
@@ -76,6 +82,7 @@ def paginated_display(fetch_page, display_fn, page_size=30):
 
 
 def format_m2o(field):
+    # Extract display name from Odoo many2one tuple [id, name]
     if isinstance(field, list) and len(field) >= 2:
         return field[1]
     return field or ''

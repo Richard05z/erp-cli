@@ -1,3 +1,4 @@
+# Task CRUD and lifecycle commands: list, get, create, change stage/category
 import typer
 from src.client import get_client, RELEVANT_STAGES
 from src.utils import format_m2o, output_json, pick, paginated_pick, paginated_display
@@ -16,11 +17,13 @@ def list(
 ):
     """List tasks, optionally filtered by project and milestone"""
     uid, models, ak, db = get_client()
+    # Pick project interactively if not provided
     if not project_id:
         projects = models.execute_kw(db, uid, ak, 'project.project',
             'search_read', [[]], {'fields': ['id', 'name'], 'order': 'create_date DESC'})
         picked = pick(projects, prompt='Select a project')
         project_id = picked['id']
+        # If applicable, also pick a milestone for the selected project
         milestones = models.execute_kw(db, uid, ak, 'project.milestone',
             'search_read', [[['project_id', '=', project_id]]], {
                 'fields': ['id', 'name', 'deadline'],
@@ -93,6 +96,7 @@ def get(
 ):
     """Show task details"""
     uid, models, ak, db = get_client()
+    # Pick task interactively with paginated picker if not provided
     if not task_id:
         def fetch_page(offset, limit):
             return models.execute_kw(db, uid, ak, 'project.task',

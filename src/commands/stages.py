@@ -1,3 +1,4 @@
+# Stage (project.task.type) commands
 import typer
 from src.client import get_client, RELEVANT_STAGES
 from src.utils import output_json
@@ -12,6 +13,7 @@ def list(
 ):
     """List task stages (only New, In process, Despliegue, Test, Finish by default)"""
     uid, models, ak, db = get_client()
+    # Without --all, only show the 5 stages relevant for task stage changes
     domain = [['id', 'in', RELEVANT_STAGES]] if not all else []
     stages = models.execute_kw(db, uid, ak, 'project.task.type',
         'search_read', [domain], {'fields': ['id', 'name'], 'order': 'id ASC'})

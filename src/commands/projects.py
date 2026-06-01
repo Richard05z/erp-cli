@@ -1,3 +1,4 @@
+# Project commands: list projects, list tasks within a project
 import typer
 from src.client import get_client
 from src.utils import format_m2o, output_json, pick, paginated_display
@@ -35,6 +36,7 @@ def tasks(
 ):
     """List tasks of a project"""
     uid, models, ak, db = get_client()
+    # Pick project interactively if not provided
     if not project_id:
         projects = models.execute_kw(db, uid, ak, 'project.project',
             'search_read', [[]], {'fields': ['id', 'name'], 'order': 'create_date DESC'})

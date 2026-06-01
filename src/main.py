@@ -1,3 +1,4 @@
+# Typer app entry point — registers all subcommand groups
 import typer
 from .commands import projects, milestones, tasks, stages, users
 

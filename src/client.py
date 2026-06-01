@@ -1,3 +1,4 @@
+# Odoo XML-RPC connection client
 import xmlrpc.client
 import os
 import sys
@@ -5,6 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+# Connection defaults — overridable via .env
 URL = os.environ.get('ERP_URL', 'https://www.erp.lombaoestudios.com')
 DB = os.environ.get('ERP_DB', 'erp.lombaoestudios.com')
 LOGIN = os.environ.get('ERP_LOGIN')
@@ -13,11 +15,13 @@ if not LOGIN:
     sys.exit(1)
 
 
+# IDs of the 5 main stages used for stage changes and --all filtering
 RELEVANT_STAGES = [156, 143, 144, 145, 161]
 STAGE_NAMES = {156: 'New', 143: 'In process', 144: 'Despliegue', 145: 'Test', 161: 'Finish'}
 
 
 def _read_api_key():
+    # Prefer env var, fallback to legacy api-key file
     key = os.environ.get('ERP_API_KEY')
     if key:
         return key
@@ -30,6 +34,7 @@ def _read_api_key():
 
 
 def get_client():
+    # Authenticate and return XML-RPC model proxy + uid
     api_key = _read_api_key()
     common = xmlrpc.client.ServerProxy(f'{URL}/xmlrpc/2/common')
     uid = common.authenticate(DB, LOGIN, api_key, {})
