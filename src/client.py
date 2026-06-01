@@ -5,8 +5,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-URL = 'https://www.erp.lombaoestudios.com'
-DB = 'erp.lombaoestudios.com'
+URL = os.environ.get('ERP_URL', 'https://www.erp.lombaoestudios.com')
+DB = os.environ.get('ERP_DB', 'erp.lombaoestudios.com')
 LOGIN = os.environ.get('ERP_LOGIN')
 if not LOGIN:
     print('Error: ERP_LOGIN not found. Set it in .env or as env var')

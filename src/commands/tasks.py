@@ -1,6 +1,7 @@
 import typer
 from src.client import get_client, RELEVANT_STAGES
-from src.utils import format_m2o, output_json, pick
+from src.utils import format_m2o, output_json, pick, paginated_pick, paginated_display
+
 
 app = typer.Typer(no_args_is_help=True)
 
@@ -9,6 +10,8 @@ app = typer.Typer(no_args_is_help=True)
 def list(
     project_id: int = typer.Argument(None, help='Project ID'),
     milestone_id: int = typer.Option(None, '--milestone', '-m', help='Milestone ID'),
+    all_tasks: bool = typer.Option(False, '--all', '-a', help='Show all tasks without pagination'),
+    limit: int = typer.Option(30, '--limit', '-l', help='Items per page'),
     json: bool = typer.Option(False, '--json', help='Output as JSON'),
 ):
     """List tasks, optionally filtered by project and milestone"""
@@ -30,24 +33,57 @@ def list(
     domain = [['project_id', '=', project_id]]
     if milestone_id:
         domain.append(['milestone_id', '=', milestone_id])
-    tasks = models.execute_kw(db, uid, ak, 'project.task',
-        'search_read', [domain], {
-            'fields': ['id', 'name', 'user_ids', 'stage_id', 'x_categories', 'milestone_id', 'create_date'],
-            'order': 'create_date DESC',
-        })
-    if json:
-        output_json(tasks)
-        return
+
     proj = models.execute_kw(db, uid, ak, 'project.project', 'read', [[project_id], ['name']])
     proj_name = proj[0]['name'] if proj else project_id
-    print(f'Tasks for {proj_name} ({len(tasks)}):\n')
-    for t in tasks:
-        stage = format_m2o(t.get('stage_id'))
-        cat = t.get('x_categories', '')
-        milestone = format_m2o(t.get('milestone_id'))
-        print(f"  [{t['id']}] {t['name']}")
-        print(f"         stage={stage}  category={cat}  milestone={milestone}")
-        print()
+
+    if json:
+        tasks = models.execute_kw(db, uid, ak, 'project.task',
+            'search_read', [domain], {
+                'fields': ['id', 'name', 'user_ids', 'stage_id', 'x_categories', 'milestone_id', 'create_date'],
+                'order': 'create_date DESC',
+            })
+        output_json(tasks)
+        return
+
+    if all_tasks:
+        tasks = models.execute_kw(db, uid, ak, 'project.task',
+            'search_read', [domain], {
+                'fields': ['id', 'name', 'user_ids', 'stage_id', 'x_categories', 'milestone_id', 'create_date'],
+                'order': 'create_date DESC',
+            })
+        print(f'Total: {len(tasks)}\n')
+        for t in tasks:
+            stage = format_m2o(t.get('stage_id'))
+            cat = t.get('x_categories', '')
+            milestone = format_m2o(t.get('milestone_id'))
+            print(f"  [{t['id']}] {t['name']}")
+            print(f"         stage={stage}  category={cat}  milestone={milestone}")
+            print()
+        return
+
+    total = models.execute_kw(db, uid, ak, 'project.task', 'search_count', [domain])
+    print(f'Tasks for {proj_name} ({total} total):\n')
+
+    def fetch_page(offset, page_limit):
+        return models.execute_kw(db, uid, ak, 'project.task',
+            'search_read', [domain], {
+                'fields': ['id', 'name', 'user_ids', 'stage_id', 'x_categories', 'milestone_id', 'create_date'],
+                'order': 'create_date DESC',
+                'offset': offset,
+                'limit': page_limit,
+            })
+
+    def display(items, offset):
+        for t in items:
+            stage = format_m2o(t.get('stage_id'))
+            cat = t.get('x_categories', '')
+            milestone = format_m2o(t.get('milestone_id'))
+            print(f"  [{t['id']}] {t['name']}")
+            print(f"         stage={stage}  category={cat}  milestone={milestone}")
+            print()
+
+    paginated_display(fetch_page, display, page_size=limit)
 
 
 @app.command()
@@ -58,13 +94,15 @@ def get(
     """Show task details"""
     uid, models, ak, db = get_client()
     if not task_id:
-        tasks = models.execute_kw(db, uid, ak, 'project.task',
-            'search_read', [[]], {
-                'fields': ['id', 'name'],
-                'order': 'create_date DESC',
-                'limit': 30,
-            })
-        picked = pick(tasks, prompt='Select a task')
+        def fetch_page(offset, limit):
+            return models.execute_kw(db, uid, ak, 'project.task',
+                'search_read', [[]], {
+                    'fields': ['id', 'name'],
+                    'order': 'create_date DESC',
+                    'offset': offset,
+                    'limit': limit,
+                })
+        picked = paginated_pick(fetch_page, prompt='Select a task')
         task_id = picked['id']
     task = models.execute_kw(db, uid, ak, 'project.task',
         'read', [[task_id], ['id', 'name', 'project_id', 'milestone_id', 'stage_id', 'user_ids', 'partner_id', 'x_categories', 'description', 'date_deadline', 'create_date']])
@@ -151,13 +189,15 @@ def stage(
     """Change task stage"""
     uid, models, ak, db = get_client()
     if not task_id:
-        tasks = models.execute_kw(db, uid, ak, 'project.task',
-            'search_read', [[]], {
-                'fields': ['id', 'name'],
-                'order': 'create_date DESC',
-                'limit': 30,
-            })
-        picked = pick(tasks, prompt='Select a task')
+        def fetch_page(offset, limit):
+            return models.execute_kw(db, uid, ak, 'project.task',
+                'search_read', [[]], {
+                    'fields': ['id', 'name'],
+                    'order': 'create_date DESC',
+                    'offset': offset,
+                    'limit': limit,
+                })
+        picked = paginated_pick(fetch_page, prompt='Select a task')
         task_id = picked['id']
     if not stage_id:
         stages = models.execute_kw(db, uid, ak, 'project.task.type',
@@ -181,13 +221,15 @@ def category(
     """Change task category"""
     uid, models, ak, db = get_client()
     if not task_id:
-        tasks = models.execute_kw(db, uid, ak, 'project.task',
-            'search_read', [[]], {
-                'fields': ['id', 'name'],
-                'order': 'create_date DESC',
-                'limit': 30,
-            })
-        picked = pick(tasks, prompt='Select a task')
+        def fetch_page(offset, limit):
+            return models.execute_kw(db, uid, ak, 'project.task',
+                'search_read', [[]], {
+                    'fields': ['id', 'name'],
+                    'order': 'create_date DESC',
+                    'offset': offset,
+                    'limit': limit,
+                })
+        picked = paginated_pick(fetch_page, prompt='Select a task')
         task_id = picked['id']
     if not category:
         category = 'Tarea tecnica'
