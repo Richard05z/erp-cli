@@ -35,6 +35,12 @@ CLI tool for Odoo ERP project management via XML-RPC API.
 - Python >= 3.8
 - Dependencies: `typer`, `python-dotenv`, `questionary`
 
+### Setup
+```bash
+pip install .
+cp .env.example .env   # then fill in your credentials
+```
+
 ### Running
 ```bash
 # Via source (development)
@@ -51,17 +57,20 @@ erp-cli <command> [subcommand] [options]
 pyinstaller erp-cli.spec
 ```
 
-### Configuration (`.env`)
-```
-ERP_URL=https://www.erp.lombaoestudios.com
-ERP_DB=erp.lombaoestudios.com
-ERP_LOGIN=richard05cardenas@gmail.com
-ERP_API_KEY=8210b0ba63eeb6a960171b4d118452fd70ec27b2
+### Configuration (`.env`) — copy from `.env.example`:
+```bash
+cp .env.example .env
 ```
 
-All four are **required**. The CLI will exit immediately if any is missing.
+All four variables are **required**. The CLI will exit immediately if any is missing.
 
-`ERP_URL` and `ERP_DB` can be omitted — they default to the values above.
+Example `.env`:
+```
+ERP_URL=https://your-odoo-instance.com
+ERP_DB=your-database-name
+ERP_LOGIN=your-email@example.com
+ERP_API_KEY=your-api-key
+```
 
 XML-RPC endpoints:
 - `/xmlrpc/2/common` — authenticate, version check
@@ -148,7 +157,7 @@ All commands auto-show `--help` when invoked without arguments.
 - **`planned_date_start` field removed**: The Odoo instance doesn't have this field on `project.task`.
 - **`user_ids` format**: Odoo XML-RPC returns `[id]` (list of ints), not `[id, name]` pairs in `read()`.
 - **Binary in `dist/`**: Pre-compiled with PyInstaller. No Python needed to run it.
-- **Internet required**: Connects to `erp.lombaoestudios.com` — no offline mode.
+- **Internet required**: Connects to the Odoo instance configured via `ERP_URL` — no offline mode.
 - **Only internal users**: `user list` filters with `[['share', '=', False]]` (excludes portal/public users).
 - **`api-key` file deprecated**: The old `api-key` file at project root still works as fallback but `.env` is preferred.
 

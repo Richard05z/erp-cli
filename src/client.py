@@ -6,12 +6,11 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Connection defaults — overridable via .env
-URL = os.environ.get('ERP_URL', 'https://www.erp.lombaoestudios.com')
-DB = os.environ.get('ERP_DB', 'erp.lombaoestudios.com')
+URL = os.environ.get('ERP_URL')
+DB = os.environ.get('ERP_DB')
 LOGIN = os.environ.get('ERP_LOGIN')
-if not LOGIN:
-    print('Error: ERP_LOGIN not found. Set it in .env or as env var')
+if not URL or not DB or not LOGIN:
+    print('Error: ERP_URL, ERP_DB, and ERP_LOGIN must be set in .env or as env vars')
     sys.exit(1)
 
 
