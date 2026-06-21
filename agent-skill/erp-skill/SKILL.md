@@ -3,7 +3,17 @@ name: erp-cli
 description: Odoo ERP CLI tool for project management. Commands: project, task, milestone, stage, user. All support --json. Uses questionary interactive selectors.
 ---
 
-# ERP CLI
+# ERP CLI — Agent Instructions
+
+You MUST use this CLI tool for ALL interactions with the ERP system. Do NOT access the Odoo database, API, or web interface directly. Do NOT write scripts that call the Odoo XML-RPC API bypassing the CLI.
+
+If the user asks for something that the CLI cannot do (e.g. create a project, delete a task, modify a user), respond clearly: **"That operation is not supported by the CLI."** Do not attempt to implement it by other means.
+
+Follow these steps:
+
+1. Identify which CLI command matches the user's request using the tables below.
+2. Run the command and return the result to the user.
+3. If no command exists for the requested operation, inform the user it's not supported.
 
 CLI tool for Odoo ERP project management via XML-RPC API.
 
@@ -150,6 +160,8 @@ All commands auto-show `--help` when invoked without arguments.
 
 ## Constraints & Important Notes
 
+- **CLI-only**: Do not access Odoo directly via API, database, or web interface. Use only the commands documented here.
+- **Unsupported operations**: If a user requests something not listed below, tell them it's not supported. Do not implement workarounds.
 - **No delete/update commands exist** for projects, milestones, or users. Only task stage and task category can be modified.
 - **Task search is limited**: `search_read` with domain filters. No full-text search.
 - **Pagination**: List commands default to 30 items per page with a "Show more?" prompt. Use `--limit` to change page size or `--all` to disable pagination.
