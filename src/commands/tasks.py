@@ -1,7 +1,8 @@
 # Task CRUD and lifecycle commands: list, get, create, change stage/category
 import typer
 from src.client import get_client, RELEVANT_STAGES
-from src.utils import format_m2o, output_json, pick, paginated_pick, paginated_display
+from src.utils import output_json, pick, paginated_pick, paginated_display
+from src.ui import console, print_task_table, print_task_detail, print_success
 
 
 app = typer.Typer(no_args_is_help=True)
@@ -120,18 +121,11 @@ def list(
                 "order": "create_date DESC",
             },
         )
-        print(f"Total: {len(tasks)}\n")
-        for t in tasks:
-            stage = format_m2o(t.get("stage_id"))
-            cat = t.get("x_categories", "")
-            milestone = format_m2o(t.get("milestone_id"))
-            print(f"  [{t['id']}] {t['name']}")
-            print(f"         stage={stage}  category={cat}  milestone={milestone}")
-            print()
+        print_task_table(tasks, title=f"Tasks for {proj_name} (all {len(tasks)})")
         return
 
     total = models.execute_kw(db, uid, ak, "project.task", "search_count", [domain])
-    print(f"Tasks for {proj_name} ({total} total):\n")
+    console.print(f"\n[bold]Tasks for {proj_name}[/] ({total} total)\n")
 
     def fetch_page(offset, page_limit):
         return models.execute_kw(
@@ -158,13 +152,7 @@ def list(
         )
 
     def display(items, offset):
-        for t in items:
-            stage = format_m2o(t.get("stage_id"))
-            cat = t.get("x_categories", "")
-            milestone = format_m2o(t.get("milestone_id"))
-            print(f"  [{t['id']}] {t['name']}")
-            print(f"         stage={stage}  category={cat}  milestone={milestone}")
-            print()
+        print_task_table(items)
 
     paginated_display(fetch_page, display, page_size=limit)
 
@@ -227,15 +215,7 @@ def get(
     if json:
         output_json(t)
         return
-    print(f"Task [{t['id']}] {t['name']}")
-    print(f"  Project   : {format_m2o(t.get('project_id'))}")
-    print(f"  Milestone : {format_m2o(t.get('milestone_id'))}")
-    print(f"  Stage     : {format_m2o(t.get('stage_id'))}")
-    print(f"  Category  : {t.get('x_categories', '')}")
-    user_ids = t.get("user_ids")
-    assignees = str(user_ids or "")
-    print(f"  Assignees : {assignees}")
-    print(f"  Created   : {t.get('create_date')}")
+    print_task_detail(t)
 
 
 @app.command()
@@ -305,10 +285,10 @@ def create(
     if json:
         output_json({"id": task_id, **task_data})
         return
-    print(f"Task [{task_id}] created")
-    print(f"  Project   : {project_id}")
-    print(f"  Milestone : {milestone_id}")
-    print(f"  Category  : {category}")
+    print_success(f"Task [{task_id}] created")
+    console.print(f"  Project   : {project_id}")
+    console.print(f"  Milestone : {milestone_id or '-'}")
+    console.print(f"  Category  : {category}")
 
 
 @app.command()
@@ -366,7 +346,7 @@ def stage(
             }
         )
         return
-    print(f'Task [{task_id}] moved to stage "{stage_name[0]["name"]}"')
+    print_success(f'Task [{task_id}] moved to stage "{stage_name[0]["name"]}"')
 
 
 @app.command()
@@ -405,4 +385,4 @@ def category(
     if json:
         output_json({"task_id": task_id, "category": category})
         return
-    print(f'Task [{task_id}] category set to "{category}"')
+    print_success(f'Task [{task_id}] category set to "{category}"')
