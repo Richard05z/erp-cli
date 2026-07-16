@@ -11,3 +11,7 @@ dependencies = ["typer", "python-dotenv", "questionary", "rich"]
 
 [project.scripts]
 erp-cli = "src.main:run"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
