@@ -7,7 +7,7 @@ name = "erp-cli"
 version = "0.1.0"
 description = "CLI tool for ERP Odoo project management"
 requires-python = ">=3.8"
-dependencies = ["typer", "python-dotenv", "questionary", "rich"]
+dependencies = ["typer", "python-dotenv", "questionary", "rich", "html2text"]
 
 [project.scripts]
 erp-cli = "src.main:run"

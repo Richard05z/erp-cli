@@ -111,3 +111,12 @@ def format_m2o(field):
 
 def output_json(data):
     print(json.dumps(data, indent=2, default=str))
+
+
+def html_to_markdown(html: str) -> str:
+    import html2text
+
+    h = html2text.HTML2Text()
+    h.body_width = 0
+    h.ignore_links = False
+    return h.handle(html).strip()

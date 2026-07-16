@@ -78,16 +78,19 @@ def print_task_detail(task):
     )
     lines.insert(2, stage_line)
 
-    desc = task.get("description", "")
-    if desc:
-        lines.append(f"\n  Description:\n  {desc}")
-
     panel = Panel(
         "\n".join(lines),
         title=f"[bold cyan]Task [{task['id']}] {task['name']}[/]",
         border_style="cyan",
     )
     console.print(panel)
+
+    desc = task.get("description", "")
+    if desc:
+        from src.utils import html_to_markdown
+        from rich.markdown import Markdown
+
+        console.print(Markdown(html_to_markdown(desc)))
 
 
 def print_project_table(projects):
