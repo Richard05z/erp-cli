@@ -2,6 +2,7 @@
 import typer
 from src.client import get_client, RELEVANT_STAGES
 from src.utils import output_json, pick, paginated_pick, paginated_display
+from questionary import confirm
 from src.ui import console, print_task_table, print_task_detail, print_success
 
 
@@ -474,6 +475,74 @@ def edit(
 
     updated = ", ".join(changes.keys())
     print_success(f"Task [{task_id}] updated: {updated}")
+
+
+@app.command()
+def delete(
+    task_id: int = typer.Argument(None, help="Task ID"),
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
+    json: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Delete a task"""
+    uid, models, ak, db = get_client()
+
+    if not task_id:
+        projects = models.execute_kw(
+            db,
+            uid,
+            ak,
+            "project.project",
+            "search_read",
+            [[]],
+            {"fields": ["id", "name"], "order": "create_date DESC"},
+        )
+        picked = pick(projects, prompt="Select a project")
+        project_id = picked["id"]
+
+        def fetch_page(offset, limit):
+            return models.execute_kw(
+                db,
+                uid,
+                ak,
+                "project.task",
+                "search_read",
+                [[["project_id", "=", project_id]]],
+                {
+                    "fields": ["id", "name"],
+                    "order": "create_date DESC",
+                    "offset": offset,
+                    "limit": limit,
+                },
+            )
+
+        picked = paginated_pick(fetch_page, prompt="Select a task to delete")
+        task_id = picked["id"]
+
+    task = models.execute_kw(
+        db,
+        uid,
+        ak,
+        "project.task",
+        "read",
+        [[task_id], ["id", "name"]],
+    )
+    if not task:
+        print(f"Task {task_id} not found")
+        raise typer.Exit(1)
+    task_name = task[0]["name"]
+
+    if not force:
+        if not confirm(f"Delete task [{task_id}] {task_name}?").ask():
+            print("Cancelled")
+            return
+
+    models.execute_kw(db, uid, ak, "project.task", "unlink", [[task_id]])
+
+    if json:
+        output_json({"deleted": True, "task_id": task_id})
+        return
+
+    print_success(f"Task [{task_id}] deleted")
 
 
 @app.command()

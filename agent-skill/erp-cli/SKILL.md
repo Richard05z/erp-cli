@@ -73,6 +73,7 @@ All commands auto-show `--help` when invoked without arguments.
 | `get` | `[TASK_ID]` | `--json` | Full task details: project, milestone, stage, category, assignees, dates, description |
 | `create` | — | `--json` | Fully interactive: project → name → milestone → category → description |
 | `edit` | `[TASK_ID]` | `--name, -n`, `--description, -d`, `--milestone, -m`, `--assignees, -a`, `--stage, -s`, `--category, -c`, `--json` | Edit a task (interactive if no flags). Milestone `0` removes it. Assignees: comma-separated IDs |
+| `delete` | `[TASK_ID]` | `--force, -f`, `--json` | Delete a task (asks confirmation unless `--force`). Interactive picker if no ID |
 | `board` | `[PROJECT_ID]` | `--milestone, -m`, `--json` | Kanban-style board grouped by stage |
 
 ### `milestone`
@@ -96,7 +97,7 @@ All commands auto-show `--help` when invoked without arguments.
 ## Constraints
 
 - **CLI-only**: Do not access Odoo directly via API, database, or web interface. Use only the commands documented here.
-- **No delete/update commands exist** for projects, milestones, or users. Only tasks can be modified via `task edit`.
+- **No delete/update commands exist** for projects, milestones, or users. Only tasks can be modified (`task edit`) or deleted (`task delete`).
 - **Pagination**: List commands default to 30 items per page. Use `--limit` to change page size or `--all` to disable pagination. Task pickers in `get`, `edit` include a "(Show more...)" option.
 - **Only internal users**: `user list` excludes portal/public users.
 - **Interactive pickers**: All selectors support search filtering (type to filter) and navigation with arrow keys. Cancel with Ctrl+C.
