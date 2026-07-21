@@ -386,3 +386,50 @@ def category(
         output_json({"task_id": task_id, "category": category})
         return
     print_success(f'Task [{task_id}] category set to "{category}"')
+
+
+@app.command()
+def board(
+    project_id: int = typer.Argument(None, help="Project ID"),
+    milestone_id: int = typer.Option(None, "--milestone", "-m", help="Milestone ID"),
+    json: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
+    """Show tasks grouped by stage (Kanban-style board view)"""
+    uid, models, ak, db = get_client()
+    if not project_id:
+        projects = models.execute_kw(
+            db,
+            uid,
+            ak,
+            "project.project",
+            "search_read",
+            [[]],
+            {"fields": ["id", "name"], "order": "create_date DESC"},
+        )
+        picked = pick(projects, prompt="Select a project")
+        project_id = picked["id"]
+
+    domain = [["project_id", "=", project_id]]
+    if milestone_id:
+        domain.append(["milestone_id", "=", milestone_id])
+
+    tasks = models.execute_kw(
+        db,
+        uid,
+        ak,
+        "project.task",
+        "search_read",
+        [domain],
+        {
+            "fields": ["id", "name", "stage_id", "x_categories", "milestone_id"],
+            "order": "stage_id ASC, id ASC",
+        },
+    )
+
+    if json:
+        output_json(tasks)
+        return
+
+    from src.ui import print_task_board
+
+    print_task_board(tasks)

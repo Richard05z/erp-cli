@@ -167,3 +167,59 @@ def print_user_table(users):
 
 def print_success(message):
     console.print(f"[green]{message}[/green]")
+
+
+def print_task_board(tasks, project_name="", milestone_name=""):
+    groups = {}
+    for t in tasks:
+        stage = t.get("stage_id")
+        if isinstance(stage, list) and len(stage) >= 2:
+            sid, sname = stage[0], stage[1]
+        else:
+            sid, sname = stage, str(stage or "Unknown")
+        if sid not in groups:
+            groups[sid] = {"name": sname, "tasks": []}
+        groups[sid]["tasks"].append(t)
+
+    for sid in STAGE_STYLES:
+        if sid in groups:
+            group = groups.pop(sid)
+            if not group["tasks"]:
+                continue
+            style = STAGE_STYLES.get(sid, "")
+            label = (
+                f"[{style}]{group['name']} ({len(group['tasks'])})[/]"
+                if style
+                else f"{group['name']} ({len(group['tasks'])})"
+            )
+            table = Table(title=label, box=box.ROUNDED, title_style="bold")
+            table.add_column("ID", style="cyan", justify="right", no_wrap=True)
+            table.add_column("Name")
+            table.add_column("Category")
+            table.add_column("Milestone")
+            for t in group["tasks"]:
+                table.add_row(
+                    str(t["id"]),
+                    t["name"],
+                    t.get("x_categories", "") or "",
+                    format_m2o(t.get("milestone_id")) or "",
+                )
+            console.print(table)
+
+    for sid, group in groups.items():
+        if not group["tasks"]:
+            continue
+        label = f"{group['name']} ({len(group['tasks'])})"
+        table = Table(title=label, box=box.ROUNDED, title_style="bold")
+        table.add_column("ID", style="cyan", justify="right", no_wrap=True)
+        table.add_column("Name")
+        table.add_column("Category")
+        table.add_column("Milestone")
+        for t in group["tasks"]:
+            table.add_row(
+                str(t["id"]),
+                t["name"],
+                t.get("x_categories", "") or "",
+                format_m2o(t.get("milestone_id")) or "",
+            )
+        console.print(table)

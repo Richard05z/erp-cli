@@ -66,6 +66,7 @@ All commands auto-show `--help` when invoked without arguments.
 | `create` | — | `--json` | Fully interactive: project → name → milestone → category → description |
 | `stage` | `[TASK_ID]` `[STAGE_ID]` | `--json` | Change task stage (pickers if omitted) |
 | `category` | `[TASK_ID]` `[CATEGORY]` | `--json` | Change task category (picker if omitted) |
+| `board` | `[PROJECT_ID]` | `--milestone, -m`, `--json` | Kanban-style board grouped by stage |
 
 ### `milestone`
 
