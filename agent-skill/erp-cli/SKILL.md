@@ -23,8 +23,15 @@ CLI tool for Odoo ERP project management via XML-RPC API.
 1. Projects are created in Odoo manually (no CLI command to create)
 2. Tasks are created within projects via `task create`
 3. Tasks move through stages: New → In process → Despliegue → Test → Finish
-4. Each task has a category: Tarea tecnica, Historia de usuario, or Caso de Prueba
-5. Tasks can be assigned to milestones (sprints/hitos) within a project
+4. Tasks can be assigned to milestones (sprints/hitos) within a project
+
+### Task Hierarchy
+All elements of the development flow are managed as tasks, differentiated by category:
+- **HU** (Historia de Usuario) → Tarea padre
+- **Tarea Técnica** (TT) → Subtarea de una HU
+- **Caso de Prueba** (CP) → Subtarea de una TT
+
+This hierarchy is enforced via the Odoo parent/subtask relationship (`parent_id`).
 
 ### Task Creation Flow (interactive)
 When `task create` is run:
@@ -34,17 +41,18 @@ When `task create` is run:
 4. **Select category** — Tarea tecnica (default), Historia de usuario, Caso de Prueba
 5. **Enter description** — optional, free text
 
-### Task Stage Change Flow
-When `task stage`:
-1. If no task ID: picker with pagination (30 per page, "(Show more...)" option)
-2. If no stage ID: picker shows the 5 relevant stages
-3. Stage is updated and confirmation shows the new stage name
-
-### Task Category Change Flow
-When `task category`:
-1. If no task ID: picker with pagination
-2. If no category: defaults to "Tarea tecnica"
-3. Category is updated
+### Task Edit Flow (interactive)
+When `task edit` is run without flags:
+1. If no TASK_ID: pick project first, then paginated picker to select a task within that project
+2. Shows current task data and prompts each field:
+   - **Name** — input with current value as default
+   - **Description** — optional input with current value as default
+   - **Milestone** — picker of project milestones with "(No milestone)" option
+   - **Assignees** — comma-separated user IDs (list all users to find IDs)
+   - **Stage** — picker of the 5 main stages with "(Keep current)" option
+   - **Category** — picker: HU, Tarea tecnica, Caso de Prueba with "(Keep current)" option
+3. All changes are applied together via `write()`
+4. If no changes made, shows "No changes made"
 
 ## Available Commands
 
@@ -64,8 +72,7 @@ All commands auto-show `--help` when invoked without arguments.
 | `list` | `[PROJECT_ID]` | `--milestone, -m`, `--stage, -s`, `--all, -a`, `--limit, -l`, `--json` | Lists tasks, picks project/milestone/stage if omitted |
 | `get` | `[TASK_ID]` | `--json` | Full task details: project, milestone, stage, category, assignees, dates, description |
 | `create` | — | `--json` | Fully interactive: project → name → milestone → category → description |
-| `stage` | `[TASK_ID]` `[STAGE_ID]` | `--json` | Change task stage (pickers if omitted) |
-| `category` | `[TASK_ID]` `[CATEGORY]` | `--json` | Change task category (picker if omitted) |
+| `edit` | `[TASK_ID]` | `--name, -n`, `--description, -d`, `--milestone, -m`, `--assignees, -a`, `--stage, -s`, `--category, -c`, `--json` | Edit a task (interactive if no flags). Milestone `0` removes it. Assignees: comma-separated IDs |
 | `board` | `[PROJECT_ID]` | `--milestone, -m`, `--json` | Kanban-style board grouped by stage |
 
 ### `milestone`
@@ -89,7 +96,7 @@ All commands auto-show `--help` when invoked without arguments.
 ## Constraints
 
 - **CLI-only**: Do not access Odoo directly via API, database, or web interface. Use only the commands documented here.
-- **No delete/update commands exist** for projects, milestones, or users. Only task stage and task category can be modified.
-- **Pagination**: List commands default to 30 items per page. Use `--limit` to change page size or `--all` to disable pagination. Task pickers in `get`, `stage`, `category` include a "(Show more...)" option.
+- **No delete/update commands exist** for projects, milestones, or users. Only tasks can be modified via `task edit`.
+- **Pagination**: List commands default to 30 items per page. Use `--limit` to change page size or `--all` to disable pagination. Task pickers in `get`, `edit` include a "(Show more...)" option.
 - **Only internal users**: `user list` excludes portal/public users.
 - **Interactive pickers**: All selectors support search filtering (type to filter) and navigation with arrow keys. Cancel with Ctrl+C.
