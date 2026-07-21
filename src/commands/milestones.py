@@ -14,9 +14,19 @@ def list(
 ):
     """List milestones (optionally filtered by project)"""
     uid, models, ak, db = get_client()
-    domain = []
-    if project_id:
-        domain = [["project_id", "=", project_id]]
+    if not project_id:
+        projects = models.execute_kw(
+            db,
+            uid,
+            ak,
+            "project.project",
+            "search_read",
+            [[]],
+            {"fields": ["id", "name"], "order": "create_date DESC"},
+        )
+        picked = pick(projects, prompt="Select a project")
+        project_id = picked["id"]
+    domain = [["project_id", "=", project_id]]
     milestones = models.execute_kw(
         db,
         uid,
